@@ -32,6 +32,8 @@ mouseSpeed = 0.001
 
 confidence = 0.5
 
+gameTime = 0
+
 
 
 attackSpeed = 0.7
@@ -43,7 +45,7 @@ orbCounter = 0
 stateMachine = 0
 
 # this fixes the latency issue with keypresses
-pydirectinput.PAUSE = 0.01
+pydirectinput.PAUSE = 0.02
 
 # allows it to run
 # PYDEVD_DISABLE_FILE_VALIDATION = 1
@@ -148,6 +150,9 @@ def findAndMove():
 
 while True:
     time.sleep(0.05)
+
+    
+
     if pm.key_pressed(65):
         print("with as" + str(attackSpeed))
         findAndMove()
