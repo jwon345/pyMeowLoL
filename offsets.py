@@ -41,6 +41,7 @@ ObjManaW = 0x2570 #13.1
 ObjManaE = 0x2580 #13.1
 ObjManaR = 0x2590 #13.1
 
+objBonusAtkSpeed = 0x132C
 objAtkRange = 0x13A4
 
 ItemListItem = 0xC

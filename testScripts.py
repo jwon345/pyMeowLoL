@@ -8,11 +8,15 @@ from node import Node, int_from_buffer, float_from_buffer, linked_insert
 import keyboard
 import pydirectinput
 
-eName = ["Tristana", "Brand", "Caiftlyn", "Malphite",
+eName = ["Lux", "Dr Mundo", "Caiftlyn", "Malphite",
          "Kayle", "PracticeTool_TargetDummy"]
 
+attackSpeedBase = 0.65
+attackWindupPercentage = 0.35
+clickDelay = 0.07
+
 # this fixes the latency issue with keypresses
-pydirectinput.PAUSE = 0.01
+pydirectinput.PAUSE = 0.005
 
 
 def find_object_pointers(base, max_count=800):
@@ -136,7 +140,7 @@ def getTarget():
         resY = targetPos[2]-MePos[2]
         res = pm.vec3(resX, resY, resZ)
         # print(res)
-        if pm.vec3_mag(res) < pm.r_float(proc, player + offsets.objAtkRange):
+        if pm.vec3_mag(res) < pm.r_float(proc, player + offsets.objAtkRange) + 10:
             print(pm.r_float(proc, player + offsets.objAtkRange))
         else:
             continue
@@ -152,6 +156,10 @@ def getTarget():
             mod['base']), width, height, pos[0], pos[1], pos[2]))
     else:
         return "break"
+
+
+def getAttackTime():
+    return 1/(attackSpeedBase * (1 + (pm.r_float(proc, player + offsets.objBonusAtkSpeed))))
 
 
 # find objects
@@ -250,19 +258,22 @@ while True:
                     pydirectinput.keyDown("j")
                     pydirectinput.keyUp("j")
 
+                    time.sleep(0.01)
                     pm.mouse_move(
                         int((m['x']-(target[0]))*2),
                         int((m['y']-(target[1]))*-2)
                     )
 
-                    canAttackTime = gameTime + 0.3
-                    canMoveTime = gameTime + 0.1
-                elif gameTime > canMoveTime:
-                    canMoveTime
+                    # make sure mouse moves back
+                    # if pm.mouse_position
 
-                pydirectinput.keyDown("k")
-                pydirectinput.keyUp("k")
-                canMoveTime = gameTime + 0.1
+                    canAttackTime = gameTime + getAttackTime()
+                    canMoveTime = gameTime + getAttackTime() * attackWindupPercentage
+                elif gameTime > canMoveTime:
+
+                    pydirectinput.keyDown("k")
+                    pydirectinput.keyUp("k")
+                    canMoveTime = gameTime + clickDelay
 
             elif gameTime > canMoveTime:
                 print("walk")
@@ -270,7 +281,7 @@ while True:
                 pydirectinput.keyDown("k")
                 pydirectinput.keyUp("k")
 
-                canMoveTime = gameTime + 0.1
+                canMoveTime = gameTime + clickDelay
 
         # for e in eList:
         #     # is visible
