@@ -5,9 +5,14 @@ import time
 import offsets
 import numpy as np
 from node import Node, int_from_buffer, float_from_buffer, linked_insert
+import keyboard
+import pydirectinput
 
-eName = ["L/ucian", "Brand", "Caitlyn", "Malphite",
+eName = ["Tristana", "Brand", "Caiftlyn", "Malphite",
          "Kayle", "PracticeTool_TargetDummy"]
+
+# this fixes the latency issue with keypresses
+pydirectinput.PAUSE = 0.01
 
 
 def find_object_pointers(base, max_count=800):
@@ -113,6 +118,42 @@ def world_to_screen(view_proj_matrix, width, height, x, y, z):
     return None, None
 
 
+def getTarget():
+
+    lowest = 99999
+
+    for e in eList:
+        # is visible
+        if (pm.r_bool(proc, e + offsets.ObjVisibility) == False):
+            continue
+
+        # is in range
+        targetPos = pm.r_floats(proc, e + offsets.ObjPos, 3)
+        MePos = pm.r_floats(proc, player + offsets.ObjPos, 3)
+
+        resX = targetPos[0]-MePos[0]
+        resZ = targetPos[1]-MePos[1]
+        resY = targetPos[2]-MePos[2]
+        res = pm.vec3(resX, resY, resZ)
+        # print(res)
+        if pm.vec3_mag(res) < pm.r_float(proc, player + offsets.objAtkRange):
+            print(pm.r_float(proc, player + offsets.objAtkRange))
+        else:
+            continue
+
+        # set if lowest
+        if pm.r_float(proc, e + offsets.ObjHealth) < lowest:
+            lowest = pm.r_float(proc, e + offsets.ObjHealth)
+            pos = (pm.r_floats(proc, e + offsets.ObjPos, 3))
+
+    if lowest != 99999:
+        print("target is " + pm.r_string(proc, e + offsets.ObjPlayerName))
+        return (world_to_screen(find_view_proj_matrix(
+            mod['base']), width, height, pos[0], pos[1], pos[2]))
+    else:
+        return "break"
+
+
 # find objects
 c = (find_object_pointers(root))
 
@@ -188,30 +229,77 @@ while True:
 
     print("done")
 
+    gameTime = 0
+    canAttackTime = 0
+    canMoveTime = 0
+
     while True:
-        for e in eList:
+        time.sleep(0.02)
 
+        gameTime = pm.r_float(proc, mod['base'] + offsets.GameTime)
+        if keyboard.is_pressed("a"):
+            if gameTime > canAttackTime:
+                print("attack")
+                target = getTarget()
+                if target != "break":
+                    m = pm.mouse_position()
+                    pm.mouse_move(
+                        int(((target[0]) - m['x'])*2),
+                        int(((target[1]) - m['y'])*-2))
 
-            #is visible
+                    pydirectinput.keyDown("j")
+                    pydirectinput.keyUp("j")
 
-            #is in range
+                    pm.mouse_move(
+                        int((m['x']-(target[0]))*2),
+                        int((m['y']-(target[1]))*-2)
+                    )
 
-            #set if lowest
+                    canAttackTime = gameTime + 0.3
+                    canMoveTime = gameTime + 0.1
+                elif gameTime > canMoveTime:
+                    canMoveTime
 
-            
+                pydirectinput.keyDown("k")
+                pydirectinput.keyUp("k")
+                canMoveTime = gameTime + 0.1
 
+            elif gameTime > canMoveTime:
+                print("walk")
 
-            print(pm.r_string(proc, e + offsets.ObjPlayerName))
-            pos = (pm.r_floats(proc, e + offsets.ObjPos, 3))
-            print(pm.r_floats(proc, e + offsets.ObjPos, 3))
-            print(pm.r_bool(proc, e + offsets.ObjVisibility))
-            print(world_to_screen(find_view_proj_matrix(
-                mod['base']), width, height, pos[0], pos[1], pos[2]))
-            print('\n')
-            time.sleep(0.5)
+                pydirectinput.keyDown("k")
+                pydirectinput.keyUp("k")
 
-    print("nope")
+                canMoveTime = gameTime + 0.1
 
-    # print(pm.r_bytes(proc, mod['base'] + 0x3163080 + 0x12D4, 4))
-    print("\n")
-    time.sleep(1)
+        # for e in eList:
+        #     # is visible
+        #     if (pm.r_bool(proc, e + offsets.ObjVisibility) == False):
+        #         continue
+
+        #     # is in range
+        #     targetPos = pm.r_floats(proc, e + offsets.ObjPos, 3)
+        #     MePos = pm.r_floats(proc, player + offsets.ObjPos, 3)
+
+        #     resX = targetPos[0]-MePos[0]
+        #     resZ = targetPos[1]-MePos[1]
+        #     resY = targetPos[2]-MePos[2]
+        #     res = pm.vec3(resX, resY, resZ)
+        #     # print(res)
+        #     if pm.vec3_mag(res) < pm.r_float(proc, player + offsets.objAtkRange):
+        #         print(pm.r_float(proc, player + offsets.objAtkRange))
+        #     else:
+        #         continue
+        #     # set if lowest
+
+        #     print(pm.r_string(proc, e + offsets.ObjPlayerName))
+        #     # print(pm.r_floats(proc, e + offsets.ObjPos, 3))
+        #     # print(pm.r_bool(proc, e + offsets.ObjVisibility))
+        #     pos = (pm.r_floats(proc, e + offsets.ObjPos, 3))
+        #     print(world_to_screen(find_view_proj_matrix(
+        #         mod['base']), width, height, pos[0], pos[1], pos[2]))
+        #     mouseMov = (world_to_screen(find_view_proj_matrix(
+        #         mod['base']), width, height, pos[0], pos[1], pos[2]))
+        #     print('\n')
+
+        # print('\n\n\n\n\njjjjjjjjjjjjj')

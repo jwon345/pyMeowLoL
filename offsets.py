@@ -40,7 +40,9 @@ ObjManaQ = 0x2560 #13.1
 ObjManaW = 0x2570 #13.1
 ObjManaE = 0x2580 #13.1
 ObjManaR = 0x2590 #13.1
- 
+
+objAtkRange = 0x13A4
+
 ItemListItem = 0xC
 ItemInfo = 0x20
 ItemInfoId = 0x74
