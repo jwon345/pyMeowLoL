@@ -7,13 +7,24 @@ import numpy as np
 from node import Node, int_from_buffer, float_from_buffer, linked_insert
 import keyboard
 import pydirectinput
+import asyncio
 
-eName = ["Lux", "Dr Mundo", "Caiftlyn", "Malphite",
-         "Kayle", "PracticeTool_TargetDummy"]
+import threading
 
-attackSpeedBase = 0.65
-attackWindupPercentage = 0.35
+
+eName = ["Kassadin", "Brand", "Jhin", "Jax",
+         "Kindred", "PracticeTool_TargetDummy"]
+
+attackSpeedBase = 0.6
+attackWindupPercentage = 0.18
 clickDelay = 0.07
+rangeExtender = 25
+
+ping = 0.020
+
+
+width = 3440
+height = 1440
 
 # this fixes the latency issue with keypresses
 pydirectinput.PAUSE = 0.005
@@ -122,7 +133,7 @@ def world_to_screen(view_proj_matrix, width, height, x, y, z):
     return None, None
 
 
-def getTarget():
+async def getTarget():
 
     lowest = 99999
 
@@ -140,18 +151,22 @@ def getTarget():
         resY = targetPos[2]-MePos[2]
         res = pm.vec3(resX, resY, resZ)
         # print(res)
-        if pm.vec3_mag(res) < pm.r_float(proc, player + offsets.objAtkRange) + 10:
+        if pm.vec3_mag(res) < pm.r_float(proc, player + offsets.objAtkRange) + rangeExtender:
             print(pm.r_float(proc, player + offsets.objAtkRange))
         else:
             continue
 
         # set if lowest
-        if pm.r_float(proc, e + offsets.ObjHealth) < lowest:
+        if pm.r_float(proc, e + offsets.ObjHealth) < lowest and pm.r_float(proc, e + offsets.ObjHealth) != 0:
             lowest = pm.r_float(proc, e + offsets.ObjHealth)
             pos = (pm.r_floats(proc, e + offsets.ObjPos, 3))
 
     if lowest != 99999:
-        print("target is " + pm.r_string(proc, e + offsets.ObjPlayerName))
+        try:
+            print("target is " + pm.r_string(proc, e + offsets.ObjPlayerName))
+        except:
+            print("name cant print")
+
         return (world_to_screen(find_view_proj_matrix(
             mod['base']), width, height, pos[0], pos[1], pos[2]))
     else:
@@ -184,9 +199,6 @@ while True:
 
     # time.sleep(5)
 
-    width = 3440
-    height = 1440
-
     eList = []
     print("finding")
     for obj in c:
@@ -196,44 +208,9 @@ while True:
                 n = pm.r_int(proc, obj + offsets.ObjName)
                 if (pm.r_string(proc, n) in eName):
                     eList.append(obj)
-                    print("good")
-
-            # eList.append(obj)
-
-            # if (pm.r_string(proc, obj + offsets.ObjPlayerName)) == "Target Dummy":
-
-            #     print(pm.r_string(proc, obj + offsets.ObjName))
-            #     print(pm.r_string(proc, pm.r_int(proc, obj + offsets.ObjName)))
-            #     time.sleep(10)
-
-            # if (pm.r_string(proc, obj + offsets.ObjPlayerName) == "Jax Bot"):
-            #     while True:
-            #         time.sleep(1)
-            #         # print(pm.r_floats(proc, player + 0x1DC, 3))  # position?
-
-            #         print(pm.r_string(proc, obj + offsets.ObjPlayerName))
-            #         print(pm.r_string(proc, obj + offsets.ObjName))
-            #         n = pm.r_int(proc, obj + offsets.ObjName)
-            #         print(n)
-            #         name = (pm.r_string(proc, n))
-            #         if name == "Jax":
-            #             print("yes")
-            #         print("\n")
-
-            #         pos = (pm.r_floats(proc, player + 0x1DC, 3))  # playerPos?2
-            #         print(world_to_screen(find_view_proj_matrix(
-            #             mod['base']), width, height, pos[0], pos[1], pos[2]))
-
+                    print("found : " + pm.r_string(proc, n))
         except:
             pass
-            # print("pass")
-
-            # print(pm.r_floats(proc, obj + offsets.ObjPos, 2))
-            # print(bytes.decode(pm.r_string(proc, obj + offsets.ObjName)))
-    # print(pm.r_string(proc, om + (1506535 * 0x18) + offsets.ObjName))
-    # print(pm.r_float(proc, om + (1506535 * 0x18) + offsets.ObjHealth))
-    # print(pm.r_string(proc, om + (1833941 * 0x18) + offsets.ObjName))
-    # print(pm.r_float(proc, om + (1833941 * 0x18) + offsets.ObjHealth))
 
     print("done")
 
@@ -242,42 +219,53 @@ while True:
     canMoveTime = 0
 
     while True:
+
         time.sleep(0.02)
 
         gameTime = pm.r_float(proc, mod['base'] + offsets.GameTime)
         if keyboard.is_pressed("a"):
-            if gameTime > canAttackTime:
+            if gameTime > canAttackTime and not pm.key_pressed(0x04):
                 print("attack")
-                target = getTarget()
-                if target != "break":
+                target = asyncio.run(getTarget())
+                if target != "break" and target[0] != None:
                     m = pm.mouse_position()
-                    pm.mouse_move(
-                        int(((target[0]) - m['x'])*2),
-                        int(((target[1]) - m['y'])*-2))
+                    # pm.mouse_move(
+                    #     int(((target[0]) - m['x'])*2),
+                    #     int(((target[1]) - m['y'])*-2))
+                    pydirectinput.moveTo(int(target[0]), int(target[1]))
 
                     pydirectinput.keyDown("j")
                     pydirectinput.keyUp("j")
 
                     time.sleep(0.01)
-                    pm.mouse_move(
-                        int((m['x']-(target[0]))*2),
-                        int((m['y']-(target[1]))*-2)
-                    )
+                    if (pm.key_pressed(0x04)):
+                        break
+                    pydirectinput.moveTo(int(m['x']), int(m['y']))
+                    if (pm.key_pressed(0x04)):
+                        break
+                    pydirectinput.moveTo(int(m['x']), int(m['y']))
+                    if (pm.key_pressed(0x04)):
+                        break
+                    pydirectinput.moveTo(int(m['x']), int(m['y']))
+                    # pm.mouse_move(
+                    #     int((m['x']-(target[0]))*2),
+                    #     int((m['y']-(target[1]))*-2)
+                    # )
 
                     # make sure mouse moves back
                     # if pm.mouse_position
 
-                    canAttackTime = gameTime + getAttackTime()
+                    canAttackTime = gameTime + ping + getAttackTime()
                     canMoveTime = gameTime + getAttackTime() * attackWindupPercentage
+                # walk
                 elif gameTime > canMoveTime:
 
                     pydirectinput.keyDown("k")
                     pydirectinput.keyUp("k")
                     canMoveTime = gameTime + clickDelay
 
+            # walk
             elif gameTime > canMoveTime:
-                print("walk")
-
                 pydirectinput.keyDown("k")
                 pydirectinput.keyUp("k")
 

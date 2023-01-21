@@ -1,9 +1,11 @@
+from ctypes import *
+import time
 
-# (2310.1260237756073, 543.944012044514)
-# Jax Bot
-# b'\x10B\xf1\x0e\x03'
-# 250692112
 
-a = b'\x10B\xf1\x0e\x03'
-
-print(a.decode('cp1250').decode("utf-8"))
+while True:
+    windll.user32.BlockInput(True)
+    print("blocking")
+    time.sleep(2)
+    windll.user32.BlockInput(False)
+    print("enable")
+    time.sleep(2)
