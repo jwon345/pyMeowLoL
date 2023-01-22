@@ -12,13 +12,14 @@ import asyncio
 import threading
 
 
-eName = ["Kassadin", "Brand", "Jhin", "Jax",
-         "Kindred", "PracticeTool_TargetDummy"]
+eName = ["Zoe", "Jhin", "Jax", "Varus",
+         "Blitzcrank", "PracticeTool_TargetDummy"]
 
-attackSpeedBase = 0.6
-attackWindupPercentage = 0.18
+attackSpeedBase = 0.694
+attackSpeedRatio = 0
+attackWindupPercentage = 0.37
 clickDelay = 0.07
-rangeExtender = 25
+rangeExtender = 100
 
 ping = 0.020
 
@@ -28,6 +29,12 @@ height = 1440
 
 # this fixes the latency issue with keypresses
 pydirectinput.PAUSE = 0.005
+
+
+class gameTimes:
+    gameTime = 0
+    canAttackTime = 0
+    canMoveTime = 0
 
 
 def find_object_pointers(base, max_count=800):
@@ -40,7 +47,6 @@ def find_object_pointers(base, max_count=800):
     pointers = set()
     count = 0
     while current_node is not None and count < max_count:
-        print("loop")
         if current_node.address in addresses_seen:
             current_node = current_node.next
             continue
@@ -173,37 +179,119 @@ async def getTarget():
         return "break"
 
 
+def GetMissles():
+    objectList = find_object_pointers(root)
+    b = [0, 0]
+    pm.draw_text(str(objectList.__sizeof__()), 3000,
+                 300, 20, pm.get_color("pink"))
+    for obj in objectList:
+        try:
+            x = (pm.r_floats(proc, obj + offsets.MissileStartPos, 3))
+            y = (pm.r_floats(proc, obj + offsets.MissileEndPos, 3))
+            if (x[0] > 100 and x[0] < 13000
+                and (pm.r_int(proc, obj + offsets.MissileSpellInfo + 0x4) != -1)
+                ):
+                # print(pm.r_floats(proc, obj + offsets.MissileStartPos, 3))
+                # print(pm.r_floats(proc, obj + offsets.MissileEndPos, 3))
+
+                # print(pm.r_string(proc, info))
+
+                b = (world_to_screen(find_view_proj_matrix(
+                    mod['base']), width, height, x[0], x[1], x[2]))
+                a = (world_to_screen(find_view_proj_matrix(
+                    mod['base']), width, height, y[0], y[1], y[2]))
+
+                pm.draw_circle(b[0], b[1], 20, pm.get_color("blue"))
+                pm.draw_circle(a[0], a[1], 20, pm.get_color("red"))
+
+                pm.draw_line(b[0], b[1], a[0], a[1], pm.get_color("red"), 1)
+
+                info = (pm.r_int(proc, obj + offsets.MissileSpellInfo + 0x4))
+                print(info)
+
+                print("B")
+                print(b)
+                print("\n")
+            # print(pm.r_floats(proc, y + offsets.MissileEndPos, 3))
+        except:
+
+            pass
+            # print("issue")
+
+
 def getAttackTime():
     return 1/(attackSpeedBase * (1 + (pm.r_float(proc, player + offsets.objBonusAtkSpeed))))
+
+
+def attackCycle():
+    if gameTimes.gameTime > gameTimes.canAttackTime and not pm.key_pressed(0x04):
+        print("attack")
+        target = asyncio.run(getTarget())
+        try:
+            pm.draw_circle(int(target[0]),  int(
+                target[1]), 100, pm.get_color("red"))
+        except:
+            print("fail")
+        if target != "break" and target[0] != None:
+            m = pm.mouse_position()
+            # pm.mouse_move(
+            #     int(((target[0]) - m['x'])*2),
+            #     int(((target[1]) - m['y'])*-2))
+            pydirectinput.moveTo(int(target[0]), int(target[1]))
+
+            pydirectinput.keyDown("j")
+            pydirectinput.keyUp("j")
+
+            if (pm.key_pressed(0x04)):
+                return
+            pydirectinput.moveTo(int(m['x']), int(m['y']))
+            if (pm.key_pressed(0x04)):
+                return
+            pydirectinput.moveTo(int(m['x']), int(m['y']))
+            if (pm.key_pressed(0x04)):
+                return
+            pydirectinput.moveTo(int(m['x']), int(m['y']))
+            # pm.mouse_move(
+            #     int((m['x']-(target[0]))*2),
+            #     int((m['y']-(target[1]))*-2)
+            # )
+
+            # make sure mouse moves back
+            # if pm.mouse_position
+
+            gameTimes.canAttackTime = gameTimes.gameTime + ping + getAttackTime()
+            gameTimes.canMoveTime = gameTimes.gameTime + \
+                getAttackTime() * attackWindupPercentage
+        # walk
+        elif gameTimes.gameTime > gameTimes.canMoveTime:
+
+            pydirectinput.keyDown("k")
+            pydirectinput.keyUp("k")
+            gameTimes.canMoveTime = gameTimes.gameTime + clickDelay
+
+    # walk
+    elif gameTimes.gameTime > gameTimes.canMoveTime:
+        pydirectinput.keyDown("k")
+        pydirectinput.keyUp("k")
+
+        gameTimes.canMoveTime = gameTimes.gameTime + clickDelay
+
+
+def printsome():
+    print("just a test function to print")
 
 
 # find objects
 c = (find_object_pointers(root))
 
+pm.overlay_init(fps=144)
+
 while True:
-
-    # print(pm.r_float(proc, mod['base'] + offsets.GameTime))
-    # print(pm.r_floats(proc, player + 0x1DC, 2))  # position?
-    # print(pm.r_float(proc, player + 0x132C))  # as
-    # print(pm.r_float(proc, player + 0x13A4))  # attack range
-
-    # print(pm.r_float(proc, player + offsets.ObjHealth))
-    # print(pm.r_float(proc, player + offsets.ObjHealth))
-    # print(pm.r_string(proc, player + offsets.ObjName))
-
-    # print(pm.r_int(proc, root))
-
-    # print(pm.r_int(proc, pm.r_int(proc, root)))
-
-    # print(find_view_proj_matrix(mod['base']))
-
-    # time.sleep(5)
 
     eList = []
     print("finding")
     for obj in c:
         try:
-
             if (pm.r_int(proc, obj + offsets.ObjName)) is not None:
                 n = pm.r_int(proc, obj + offsets.ObjName)
                 if (pm.r_string(proc, n) in eName):
@@ -214,91 +302,28 @@ while True:
 
     print("done")
 
-    gameTime = 0
-    canAttackTime = 0
-    canMoveTime = 0
+    while pm.overlay_loop():
+        gameTimes.gameTime = pm.r_float(proc, mod['base'] + offsets.GameTime)
+        if keyboard.is_pressed("a") and gameTimes.gameTime > gameTimes.canMoveTime:
+            attackThread = threading.Thread(target=attackCycle)
+            attackThread.start()
+            attackThread.join()
 
-    while True:
+        pm.begin_drawing()
+        pm.draw_fps(3000, 200)
 
-        time.sleep(0.02)
+        GetMissles()
 
-        gameTime = pm.r_float(proc, mod['base'] + offsets.GameTime)
-        if keyboard.is_pressed("a"):
-            if gameTime > canAttackTime and not pm.key_pressed(0x04):
-                print("attack")
-                target = asyncio.run(getTarget())
-                if target != "break" and target[0] != None:
-                    m = pm.mouse_position()
-                    # pm.mouse_move(
-                    #     int(((target[0]) - m['x'])*2),
-                    #     int(((target[1]) - m['y'])*-2))
-                    pydirectinput.moveTo(int(target[0]), int(target[1]))
+        if (pm.r_bool(proc, player + offsets.ObjCastSpell)):
+            pass
+            # MePos = pm.r_floats(proc, player + offsets.ObjPos, 3)
+            # attackRadius = pm.r_float(proc, player + offsets.objAtkRange)
+            # MeScreenPos = (world_to_screen(find_view_proj_matrix(
+            #     mod['base']), width, height, MePos[0], MePos[1], MePos[2]))
+            # try:
+            #     pm.draw_ellipse_lines(int(MeScreenPos[0]), int(
+            #         MeScreenPos[1])+50, attackRadius, attackRadius * 0.8, pm.get_color("white"))
+            # except:
+            #     print("offscreen")
 
-                    pydirectinput.keyDown("j")
-                    pydirectinput.keyUp("j")
-
-                    time.sleep(0.01)
-                    if (pm.key_pressed(0x04)):
-                        break
-                    pydirectinput.moveTo(int(m['x']), int(m['y']))
-                    if (pm.key_pressed(0x04)):
-                        break
-                    pydirectinput.moveTo(int(m['x']), int(m['y']))
-                    if (pm.key_pressed(0x04)):
-                        break
-                    pydirectinput.moveTo(int(m['x']), int(m['y']))
-                    # pm.mouse_move(
-                    #     int((m['x']-(target[0]))*2),
-                    #     int((m['y']-(target[1]))*-2)
-                    # )
-
-                    # make sure mouse moves back
-                    # if pm.mouse_position
-
-                    canAttackTime = gameTime + ping + getAttackTime()
-                    canMoveTime = gameTime + getAttackTime() * attackWindupPercentage
-                # walk
-                elif gameTime > canMoveTime:
-
-                    pydirectinput.keyDown("k")
-                    pydirectinput.keyUp("k")
-                    canMoveTime = gameTime + clickDelay
-
-            # walk
-            elif gameTime > canMoveTime:
-                pydirectinput.keyDown("k")
-                pydirectinput.keyUp("k")
-
-                canMoveTime = gameTime + clickDelay
-
-        # for e in eList:
-        #     # is visible
-        #     if (pm.r_bool(proc, e + offsets.ObjVisibility) == False):
-        #         continue
-
-        #     # is in range
-        #     targetPos = pm.r_floats(proc, e + offsets.ObjPos, 3)
-        #     MePos = pm.r_floats(proc, player + offsets.ObjPos, 3)
-
-        #     resX = targetPos[0]-MePos[0]
-        #     resZ = targetPos[1]-MePos[1]
-        #     resY = targetPos[2]-MePos[2]
-        #     res = pm.vec3(resX, resY, resZ)
-        #     # print(res)
-        #     if pm.vec3_mag(res) < pm.r_float(proc, player + offsets.objAtkRange):
-        #         print(pm.r_float(proc, player + offsets.objAtkRange))
-        #     else:
-        #         continue
-        #     # set if lowest
-
-        #     print(pm.r_string(proc, e + offsets.ObjPlayerName))
-        #     # print(pm.r_floats(proc, e + offsets.ObjPos, 3))
-        #     # print(pm.r_bool(proc, e + offsets.ObjVisibility))
-        #     pos = (pm.r_floats(proc, e + offsets.ObjPos, 3))
-        #     print(world_to_screen(find_view_proj_matrix(
-        #         mod['base']), width, height, pos[0], pos[1], pos[2]))
-        #     mouseMov = (world_to_screen(find_view_proj_matrix(
-        #         mod['base']), width, height, pos[0], pos[1], pos[2]))
-        #     print('\n')
-
-        # print('\n\n\n\n\njjjjjjjjjjjjj')
+        pm.end_drawing()
