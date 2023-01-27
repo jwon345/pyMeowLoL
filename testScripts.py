@@ -1,7 +1,4 @@
 import pyMeow as pm
-import subprocess
-import sys
-import time
 import offsets
 import numpy as np
 from node import Node, int_from_buffer, float_from_buffer, linked_insert
@@ -12,12 +9,12 @@ import asyncio
 import threading
 
 
-eName = ["Zoe", "Jhin", "Jax", "Varus",
-         "Blitzcrank", "PracticeTool_TargetDummy"]
+eName = ["Graves", "Veigar", "Samira", "Pyke",
+         "Gnar", "PracticeTool_TargetDummy"]
 
-attackSpeedBase = 0.694
+attackSpeedBase = 0.625
 attackSpeedRatio = 0
-attackWindupPercentage = 0.37
+attackWindupPercentage = 0.5
 clickDelay = 0.07
 rangeExtender = 100
 
@@ -179,6 +176,17 @@ async def getTarget():
         return "break"
 
 
+def ChampCastSpell():
+
+    if (pm.r_bool(proc, player + offsets.ObjCastSpell)):
+        a = pm.r_int(proc, player + offsets.ObjSpellBook)
+        # n = pm.r_bytes(proc, a, 30)
+        n = pm.r_float(proc, a + 0x24)
+        print(n)
+
+    #
+
+
 def GetMissles():
     objectList = find_object_pointers(root)
     b = [0, 0]
@@ -188,9 +196,10 @@ def GetMissles():
         try:
             x = (pm.r_floats(proc, obj + offsets.MissileStartPos, 3))
             y = (pm.r_floats(proc, obj + offsets.MissileEndPos, 3))
-            if (x[0] > 100 and x[0] < 13000
-                and (pm.r_int(proc, obj + offsets.MissileSpellInfo + 0x4) != -1)
-                ):
+            if (x[0] > 100 and x[0] < 15000
+                        and y[0] > 100 and y[1] < 15000
+                    and (pm.r_int(proc, obj + offsets.MissileSpellInfo + 0x4) in [0, 1, 2, 3])
+                    ):
                 # print(pm.r_floats(proc, obj + offsets.MissileStartPos, 3))
                 # print(pm.r_floats(proc, obj + offsets.MissileEndPos, 3))
 
@@ -201,17 +210,10 @@ def GetMissles():
                 a = (world_to_screen(find_view_proj_matrix(
                     mod['base']), width, height, y[0], y[1], y[2]))
 
+                pm.draw_line(b[0], b[1], a[0], a[1], pm.get_color("red"), 5)
                 pm.draw_circle(b[0], b[1], 20, pm.get_color("blue"))
                 pm.draw_circle(a[0], a[1], 20, pm.get_color("red"))
 
-                pm.draw_line(b[0], b[1], a[0], a[1], pm.get_color("red"), 1)
-
-                info = (pm.r_int(proc, obj + offsets.MissileSpellInfo + 0x4))
-                print(info)
-
-                print("B")
-                print(b)
-                print("\n")
             # print(pm.r_floats(proc, y + offsets.MissileEndPos, 3))
         except:
 
@@ -239,8 +241,8 @@ def attackCycle():
             #     int(((target[1]) - m['y'])*-2))
             pydirectinput.moveTo(int(target[0]), int(target[1]))
 
-            pydirectinput.keyDown("j")
-            pydirectinput.keyUp("j")
+            pydirectinput.keyDown("q")
+            pydirectinput.keyUp("q")
 
             if (pm.key_pressed(0x04)):
                 return
@@ -304,7 +306,7 @@ while True:
 
     while pm.overlay_loop():
         gameTimes.gameTime = pm.r_float(proc, mod['base'] + offsets.GameTime)
-        if keyboard.is_pressed("a") and gameTimes.gameTime > gameTimes.canMoveTime:
+        if (pm.key_pressed(0x06)) and gameTimes.gameTime > gameTimes.canMoveTime:
             attackThread = threading.Thread(target=attackCycle)
             attackThread.start()
             attackThread.join()
@@ -313,9 +315,10 @@ while True:
         pm.draw_fps(3000, 200)
 
         GetMissles()
+        # ChampCastSpell()
 
         if (pm.r_bool(proc, player + offsets.ObjCastSpell)):
-            pass
+            print("spellcasting")
             # MePos = pm.r_floats(proc, player + offsets.ObjPos, 3)
             # attackRadius = pm.r_float(proc, player + offsets.objAtkRange)
             # MeScreenPos = (world_to_screen(find_view_proj_matrix(
