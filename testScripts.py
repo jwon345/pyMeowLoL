@@ -9,12 +9,12 @@ import asyncio
 import threading
 
 
-eName = ["Graves", "Veigar", "Samira", "Pyke",
-         "Gnar", "PracticeTool_TargetDummy"]
+eName = ["Nami", "TwistedFate", "Jhin", "Amumu",
+         "Shen", "PracticeTool_TargetDummy"]
 
-attackSpeedBase = 0.625
+attackSpeedBase = 0.679
 attackSpeedRatio = 0
-attackWindupPercentage = 0.5
+attackWindupPercentage = 0.16
 clickDelay = 0.07
 rangeExtender = 100
 
@@ -72,8 +72,6 @@ proc = pm.open_process(processName="League of Legends.exe")
 
 # print(pm.get_module(proc)) 0x201804485A0,
 
-
-print(pm.enum_processes())
 
 mod = (pm.get_module(proc, "League of Legends.exe"))
 
@@ -189,30 +187,73 @@ def ChampCastSpell():
 
 def GetMissles():
     objectList = find_object_pointers(root)
+    missleCount = 0
     b = [0, 0]
-    pm.draw_text(str(objectList.__sizeof__()), 3000,
-                 300, 20, pm.get_color("pink"))
     for obj in objectList:
         try:
-            x = (pm.r_floats(proc, obj + offsets.MissileStartPos, 3))
-            y = (pm.r_floats(proc, obj + offsets.MissileEndPos, 3))
-            if (x[0] > 100 and x[0] < 15000
-                        and y[0] > 100 and y[1] < 15000
+            missleStartPos = (pm.r_floats(
+                proc, obj + offsets.MissileStartPos, 3))
+            missleEndPos = (pm.r_floats(proc, obj + offsets.MissileEndPos, 3))
+
+            # if missle startpos within the map and is not an auto attack
+            if (missleStartPos[0] > 1 and missleStartPos[0] < 20000
+                and missleEndPos[0] > 1 and missleEndPos[0] < 20000
                     and (pm.r_int(proc, obj + offsets.MissileSpellInfo + 0x4) in [0, 1, 2, 3])
-                    ):
+                ):
+
+                missleCount += 1
+
+                # pm.draw_text(str(hex(obj) + "  " + str(pm.r_int16(proc, obj + offsets.MissileSpellInfo + 16))), 2500, 200 + 20*missleCount,
+                #              20, pm.get_color("white"))
+
+                # if (pm.r_int16(proc, obj + offsets.MissileSpellInfo + 16) == 1063):
+                #     pm.draw_text("lux Q", 2500, 500 + 20*missleCount,
+                #                  20, pm.get_color("white"))
+                # if (pm.r_int16(proc, obj + offsets.MissileSpellInfo + 16) == 10972):
+                #     pm.draw_text("lux E", 2500, 500 + 20*missleCount,
+                #                  20, pm.get_color("white"))
+                # if (pm.r_int16(proc, obj + offsets.MissileSpellInfo + 16) == 26549):
+                #     pm.draw_text("lux W", 2500, 500 + 20*missleCount,
+                #                  20, pm.get_color("white"))
+                # if (pm.r_int16(proc, obj + offsets.MissileSpellInfo + 16) == -29353):
+                #     pm.draw_text("Draven Q", 2500, 500 + 20*missleCount,
+                #                  20, pm.get_color("white"))
+                #     continue
+
+                localPlayerPos = pm.r_floats(proc, player + offsets.ObjPos, 3)
+                if (missleStartPos[0] < (localPlayerPos[0] + 200)):
+                    if (missleStartPos[0] > (localPlayerPos[0] - 200)):
+                        if (missleStartPos[2] > (localPlayerPos[2] - 200)):
+                            if (missleStartPos[2] < (localPlayerPos[2] + 200)):
+                                missleStartPosToScreen = (world_to_screen(find_view_proj_matrix(
+                                    mod['base']), width, height, missleStartPos[0], missleStartPos[1], missleStartPos[2]))
+                                missleEndPosToScreen = (world_to_screen(find_view_proj_matrix(
+                                    mod['base']), width, height, missleEndPos[0], missleEndPos[1], missleEndPos[2]))
+
+                                pm.draw_line(missleStartPosToScreen[0], missleStartPosToScreen[1],
+                                             missleEndPosToScreen[0], missleEndPosToScreen[1], pm.get_color("white"), 1)
+                                pm.draw_circle(
+                                    missleStartPosToScreen[0], missleStartPosToScreen[1], 5, pm.get_color("purple"))
+                                pm.draw_circle(
+                                    missleEndPosToScreen[0], missleEndPosToScreen[1], 5, pm.get_color("red"))
+                                continue
+
                 # print(pm.r_floats(proc, obj + offsets.MissileStartPos, 3))
                 # print(pm.r_floats(proc, obj + offsets.MissileEndPos, 3))
 
                 # print(pm.r_string(proc, info))
 
-                b = (world_to_screen(find_view_proj_matrix(
-                    mod['base']), width, height, x[0], x[1], x[2]))
-                a = (world_to_screen(find_view_proj_matrix(
-                    mod['base']), width, height, y[0], y[1], y[2]))
+                missleStartPosToScreen = (world_to_screen(find_view_proj_matrix(
+                    mod['base']), width, height, missleStartPos[0], missleStartPos[1], missleStartPos[2]))
+                missleEndPosToScreen = (world_to_screen(find_view_proj_matrix(
+                    mod['base']), width, height, missleEndPos[0], missleEndPos[1], missleEndPos[2]))
 
-                pm.draw_line(b[0], b[1], a[0], a[1], pm.get_color("red"), 5)
-                pm.draw_circle(b[0], b[1], 20, pm.get_color("blue"))
-                pm.draw_circle(a[0], a[1], 20, pm.get_color("red"))
+                pm.draw_line(missleStartPosToScreen[0], missleStartPosToScreen[1],
+                             missleEndPosToScreen[0], missleEndPosToScreen[1], pm.get_color("white"), 8)
+                pm.draw_circle(
+                    missleStartPosToScreen[0], missleStartPosToScreen[1], 20, pm.get_color("blue"))
+                pm.draw_circle(
+                    missleEndPosToScreen[0], missleEndPosToScreen[1], 20, pm.get_color("red"))
 
             # print(pm.r_floats(proc, y + offsets.MissileEndPos, 3))
         except:
@@ -222,6 +263,9 @@ def GetMissles():
 
 
 def getAttackTime():
+    if (attackSpeedRatio != 0):
+        return 1/(attackSpeedBase + (attackSpeedRatio * (pm.r_float(proc, player + offsets.objBonusAtkSpeed))))
+
     return 1/(attackSpeedBase * (1 + (pm.r_float(proc, player + offsets.objBonusAtkSpeed))))
 
 
@@ -241,8 +285,8 @@ def attackCycle():
             #     int(((target[1]) - m['y'])*-2))
             pydirectinput.moveTo(int(target[0]), int(target[1]))
 
-            pydirectinput.keyDown("q")
-            pydirectinput.keyUp("q")
+            pydirectinput.keyDown("j")
+            pydirectinput.keyUp("j")
 
             if (pm.key_pressed(0x04)):
                 return
@@ -317,8 +361,14 @@ while True:
         GetMissles()
         # ChampCastSpell()
 
-        if (pm.r_bool(proc, player + offsets.ObjCastSpell)):
-            print("spellcasting")
+        try:
+            if (pm.r_bool(proc, player + offsets.ObjCastSpell)):
+                pass
+                # print("spellcasting")
+        except:
+            print("game Ended")
+            input()
+
             # MePos = pm.r_floats(proc, player + offsets.ObjPos, 3)
             # attackRadius = pm.r_float(proc, player + offsets.objAtkRange)
             # MeScreenPos = (world_to_screen(find_view_proj_matrix(
