@@ -14,11 +14,13 @@ import threading
 
 attackSpeedBase = 0.6
 attackSpeedRatio = 0
-attackWindupPercentage = 0.3
+attackWindupPercentage = 0.2
 clickDelay = 0.07
-rangeExtender = 100
+rangeExtender = 400
 
-ping = 0.020
+dodgekey = "2"
+
+ping = 0.050
 
 
 width = 3440
@@ -38,6 +40,10 @@ class dodgeClass:
     dodge = False
     pos = [0, 0]
     lastDodgeTime = 0
+
+
+class drawItems:
+    attackspeedText = 0
 
 
 def find_object_pointers(base, max_count=800):
@@ -210,8 +216,8 @@ def GetMissles():
             # if missle startpos within the map and is not an auto attack
             if (missleStartPos[0] > 1 and missleStartPos[0] < 20000
                     and missleEndPos[0] > 1 and missleEndPos[0] < 20000
-                        and (pm.r_int(proc, obj + offsets.MissileSpellInfo + 0x4) in [0, 1, 2, 3])
-                    ):
+                and (pm.r_int(proc, obj + offsets.MissileSpellInfo + 0x4) in [0, 1, 2, 3])
+                ):
 
                 missleCount += 1
 
@@ -248,6 +254,13 @@ def GetMissles():
                     continue
                 if (pm.r_int16(proc, obj + offsets.MissileSpellInfo + 16) == 13001):
                     pm.draw_text("Ashe W", 2500, 500 + 20*missleCount,
+                                 20, pm.get_color("white"))
+                    continue
+                if (pm.r_int16(proc, obj + offsets.MissileSpellInfo + 16) == -14079):
+                    # pm.draw_text("Zeri Q", 2500, 500 + 20*missleCount, 20, pm.get_color("white"))
+                    continue
+                if (pm.r_int16(proc, obj + offsets.MissileSpellInfo + 16) == -4798):
+                    pm.draw_text("Kalista e", 2500, 500 + 20*missleCount,
                                  20, pm.get_color("white"))
                     continue
 
@@ -323,24 +336,30 @@ def GetMissles():
                 dodgeUpMagnitude = (dodgeUp[0]**2 + dodgeUp[1]**2)**0.5
                 dodgeDownMagnitude = (dodgeDown[0]**2 + dodgeDown[1]**2)**0.5
 
-                pm.draw_line(
-                    localPlayerScreenPos[0], localPlayerScreenPos[1], localPlayerScreenPos[0] - unitLength[1], localPlayerScreenPos[1] - unitLength[0], pm.get_color("red"), 1)
-                pm.draw_line(
-                    localPlayerScreenPos[0], localPlayerScreenPos[1], localPlayerScreenPos[0] + unitLength[1], localPlayerScreenPos[1] + unitLength[0], pm.get_color("blue"), 1)
-
-                pm.draw_line(
-                    localPlayerScreenPos[0], localPlayerScreenPos[1], localPlayerScreenPos[0] + playerToMissle[0], localPlayerScreenPos[1] + playerToMissle[1], pm.get_color("purple"), 1)
-
-                pm.draw_line(
-                    localPlayerScreenPos[0] + unitLength[1], localPlayerScreenPos[1] + unitLength[0], localPlayerScreenPos[0] + playerToMissle[0], localPlayerScreenPos[1] + playerToMissle[1], pm.get_color("purple"), 10)
-                pm.draw_line(
-                    localPlayerScreenPos[0] - unitLength[1], localPlayerScreenPos[1] - unitLength[0], localPlayerScreenPos[0] + playerToMissle[0], localPlayerScreenPos[1] + playerToMissle[1], pm.get_color("purple"), 10)
-
                 if (pm.key_pressed(0x53)):
-                    dodgeClass.dodge = True
                     if dodgeUpMagnitude > 400:
                         print("toofar")
                         continue
+
+                    # dodge lines
+                    pm.draw_line(
+                        localPlayerScreenPos[0], localPlayerScreenPos[1], localPlayerScreenPos[0] - unitLength[1], localPlayerScreenPos[1] - unitLength[0], pm.get_color("red"), 1)
+                    pm.draw_line(
+                        localPlayerScreenPos[0], localPlayerScreenPos[1], localPlayerScreenPos[0] + unitLength[1], localPlayerScreenPos[1] + unitLength[0], pm.get_color("blue"), 1)
+
+                    # middle plyaer to missle end point
+                    pm.draw_line(
+                        localPlayerScreenPos[0], localPlayerScreenPos[1], localPlayerScreenPos[0] + playerToMissle[0], localPlayerScreenPos[1] + playerToMissle[1], pm.get_color("purple"), 1)
+
+                    # player dodge points to misslew
+                    pm.draw_line(
+                        localPlayerScreenPos[0] + unitLength[1], localPlayerScreenPos[1] + unitLength[0], localPlayerScreenPos[0] + playerToMissle[0], localPlayerScreenPos[1] + playerToMissle[1], pm.get_color("green"), 10)
+                    pm.draw_line(
+                        localPlayerScreenPos[0] - unitLength[1], localPlayerScreenPos[1] - unitLength[0], localPlayerScreenPos[0] + playerToMissle[0], localPlayerScreenPos[1] + playerToMissle[1], pm.get_color("green"), 10)
+
+                    # if within range dodge initiate
+
+                    dodgeClass.dodge = True
                     if dodgeUpMagnitude < dodgeDownMagnitude:
                         dodgeClass.pos = [int(
                             localPlayerScreenPos[0] - unitLength[1]), int(localPlayerScreenPos[1] - unitLength[0])]
@@ -360,9 +379,15 @@ def GetMissles():
 
 
 def getAttackTime():
-    if (attackSpeedRatio != 0):
-        return 1/(attackSpeedBase + (attackSpeedRatio * (pm.r_float(proc, player + offsets.objBonusAtkSpeed))))
+    if champ == "zeri":
 
+        return max([1/(attackSpeedBase + (attackSpeedRatio * (pm.r_float(proc, player + offsets.objBonusAtkSpeed)))), 1/1.5])
+    if (attackSpeedRatio != 0):
+        drawItems.attackspeedText = (attackSpeedBase + (attackSpeedRatio *
+                                                        (pm.r_float(proc, player + offsets.objBonusAtkSpeed))))
+        return 1/(attackSpeedBase + (attackSpeedRatio * (pm.r_float(proc, player + offsets.objBonusAtkSpeed))))
+    
+    drawItems.attackspeedText = (attackSpeedBase * (1 + (pm.r_float(proc, player + offsets.objBonusAtkSpeed))))
     return 1/(attackSpeedBase * (1 + (pm.r_float(proc, player + offsets.objBonusAtkSpeed))))
 
 
@@ -373,8 +398,8 @@ def attackCycle():
         if (gameTimes.gameTime > dodgeClass.lastDodgeTime + 10):
             dodgeClass.dodge = False
             pydirectinput.moveTo(dodgeClass.pos[0], dodgeClass.pos[1])
-            pydirectinput.keyDown("w")
-            pydirectinput.keyUp("w")
+            pydirectinput.keyDown(dodgekey)
+            pydirectinput.keyUp(dodgekey)
             pydirectinput.keyDown("k")
             pydirectinput.keyUp("k")
             dodgeClass.lastDodgeTime = gameTimes.gameTime
@@ -383,26 +408,34 @@ def attackCycle():
         if (gameTimes.gameTime >= gameTimes.canMoveTime):
             dodgeClass.dodge = False
             pydirectinput.moveTo(dodgeClass.pos[0], dodgeClass.pos[1])
-            pydirectinput.keyDown("w")
-            pydirectinput.keyUp("w")
+            pydirectinput.keyDown(dodgekey)
+            pydirectinput.keyUp(dodgekey)
             pydirectinput.keyDown("k")
             pydirectinput.keyUp("k")
             dodgeClass.lastDodgeTime = gameTimes.gameTime
             gameTimes.canMoveTime = gameTimes.gameTime + clickDelay
 
+    # a click
     if gameTimes.gameTime > gameTimes.canAttackTime and pm.key_pressed(0x41) and not pm.key_pressed(0x04):
-        print("attack")
         pydirectinput.keyDown("x")
         pydirectinput.keyUp("x")
+
+        time.sleep(0.01)
 
         if (pm.key_pressed(0x04)):
             return
         gameTimes.canAttackTime = gameTimes.gameTime + ping + getAttackTime()
         gameTimes.canMoveTime = gameTimes.gameTime + \
             getAttackTime() * attackWindupPercentage
+        return
+    elif gameTimes.gameTime > gameTimes.canMoveTime:
+        pydirectinput.keyDown("k")
+        pydirectinput.keyUp("k")
+
+        gameTimes.canMoveTime = gameTimes.gameTime + clickDelay
 
     if gameTimes.gameTime > gameTimes.canAttackTime and pm.key_pressed(0x06) and not pm.key_pressed(0x04):
-        print("attack")
+
         target = asyncio.run(getTarget())
         try:
             pm.draw_circle(int(target[0]),  int(
@@ -413,12 +446,11 @@ def attackCycle():
             m = pm.mouse_position()
             pydirectinput.moveTo(int(target[0]), int(target[1]))
 
+            # pydirectinput.keyDown("q")
+            # pydirectinput.keyUp("q")
             pydirectinput.keyDown("j")
             pydirectinput.keyUp("j")
 
-            if (pm.key_pressed(0x04)):
-                return
-            pydirectinput.moveTo(int(m['x']), int(m['y']))
             if (pm.key_pressed(0x04)):
                 return
             pydirectinput.moveTo(int(m['x']), int(m['y']))
@@ -451,9 +483,14 @@ def printsome():
     print("just a test function to print")
 
 
+def drawshit():
+    pm.draw_text((str(drawItems.attackspeedText)),
+                 2500, 200, 20, pm.get_color("white"))
+
 ######
 # MAIN START
 #####
+
 
 champ = pm.r_string(proc, pm.r_int(proc, player + offsets.ObjName)).lower()
 if (champ in champStats):
@@ -498,6 +535,8 @@ while pm.overlay_loop():
 
     GetMissles()
     # ChampCastSpell()
+
+    drawshit()
 
     try:
         if (pm.r_bool(proc, player + offsets.ObjCastSpell)):
