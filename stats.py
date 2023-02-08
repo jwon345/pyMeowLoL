@@ -30,6 +30,11 @@ champStats = {
         "attackSpeedRatio": 0.667,
         "attackWindupPercentage":0.2 
     },
+    "caitlyn": {
+        "attackSpeedBase": 0.681,
+        "attackSpeedRatio": 0.568,
+        "attackWindupPercentage":0.18
+    },
     "kalista": {
         "attackSpeedBase": 0.694,
         "attackSpeedRatio": 0,

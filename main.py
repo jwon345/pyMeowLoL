@@ -16,7 +16,7 @@ attackSpeedBase = 0.6
 attackSpeedRatio = 0
 attackWindupPercentage = 0.2
 clickDelay = 0.07
-rangeExtender = 400
+rangeExtender = 100
 
 dodgekey = "2"
 
@@ -44,6 +44,8 @@ class dodgeClass:
 
 class drawItems:
     attackspeedText = 0
+    debugText = ""
+    debugTextMem = ""
 
 
 def find_object_pointers(base, max_count=800):
@@ -207,7 +209,7 @@ def GetMissles():
     missleCount = 0
     b = [0, 0]
     for obj in objectList:
-        size = 8
+        size = 3
         try:
             missleStartPos = (pm.r_floats(
                 proc, obj + offsets.MissileStartPos, 3))
@@ -215,17 +217,21 @@ def GetMissles():
 
             # if missle startpos within the map and is not an auto attack
             if (missleStartPos[0] > 1 and missleStartPos[0] < 20000
-                    and missleEndPos[0] > 1 and missleEndPos[0] < 20000
-                and (pm.r_int(proc, obj + offsets.MissileSpellInfo + 0x4) in [0, 1, 2, 3])
+                and missleEndPos[0] > 1 and missleEndPos[0] < 20000
+                    and (pm.r_int(proc, obj + offsets.MissileSpellInfo + 0x4) in [0, 1, 2, 3])
                 ):
 
                 missleCount += 1
 
-                pm.draw_text(str(hex(obj) + "  " + str(pm.r_int16(proc, obj + offsets.MissileSpellInfo + 16))), 2500, 200 + 20*missleCount,
-                             20, pm.get_color("white"))
+                # pm.draw_text(str(hex(obj) + "  " + str(pm.r_int16(proc, obj + offsets.MissileSpellInfo + 16))), 2500, 200 + 20*missleCount,
+                #              20, pm.get_color("white"))
 
-                print(str(hex(obj) + "  " + str(pm.r_int16(proc,
-                      obj + offsets.MissileSpellInfo + 16))))
+                drawItems.debugText = str(pm.r_ints(
+                    proc, obj + offsets.MissileSpellInfo, 20))
+                drawItems.debugTextMem = str(hex(obj))
+
+                print(str(hex(obj) + "  " + str(pm.r_ints16(proc,
+                      obj + offsets.MissileSpellInfo, 10))))
 
                 if (pm.r_int16(proc, obj + offsets.MissileSpellInfo + 16) == 1063):
                     pm.draw_text("lux Q", 2500, 500 + 20*missleCount,
@@ -296,9 +302,9 @@ def GetMissles():
                 # print(pm.r_string(proc, info))
 
                 missleStartPosToScreen = (world_to_screen(find_view_proj_matrix(
-                    mod['base']), width, height, missleStartPos[0], missleStartPos[1] * 2, missleStartPos[2], offscreen=True))
+                    mod['base']), width, height, missleStartPos[0], (missleStartPos[1]) + 50, missleStartPos[2], offscreen=True))
                 missleEndPosToScreen = (world_to_screen(find_view_proj_matrix(
-                    mod['base']), width, height, missleEndPos[0], missleEndPos[1] * 2, missleEndPos[2], offscreen=True))
+                    mod['base']), width, height, missleEndPos[0], (missleEndPos[1]) + 50, missleEndPos[2], offscreen=True))
 
                 if missleStartPos[0] == None and missleStartPos[1] == None and missleEndPos[0] == None and missleEndPos[1] == None:
                     continue
@@ -337,7 +343,7 @@ def GetMissles():
                 dodgeDownMagnitude = (dodgeDown[0]**2 + dodgeDown[1]**2)**0.5
 
                 if (pm.key_pressed(0x53)):
-                    if dodgeUpMagnitude > 400:
+                    if dodgeUpMagnitude > 1000:
                         print("toofar")
                         continue
 
@@ -386,8 +392,9 @@ def getAttackTime():
         drawItems.attackspeedText = (attackSpeedBase + (attackSpeedRatio *
                                                         (pm.r_float(proc, player + offsets.objBonusAtkSpeed))))
         return 1/(attackSpeedBase + (attackSpeedRatio * (pm.r_float(proc, player + offsets.objBonusAtkSpeed))))
-    
-    drawItems.attackspeedText = (attackSpeedBase * (1 + (pm.r_float(proc, player + offsets.objBonusAtkSpeed))))
+
+    drawItems.attackspeedText = (
+        attackSpeedBase * (1 + (pm.r_float(proc, player + offsets.objBonusAtkSpeed))))
     return 1/(attackSpeedBase * (1 + (pm.r_float(proc, player + offsets.objBonusAtkSpeed))))
 
 
@@ -487,6 +494,10 @@ def drawshit():
     pm.draw_text((str(drawItems.attackspeedText)),
                  2500, 200, 20, pm.get_color("white"))
 
+    pm.draw_text((str(pm.r_floats(proc, player + offsets.ObjPos, 3))),
+                 3000, 400, 20, pm.get_color("white"))
+    pm.draw_text(drawItems.debugTextMem + "  " +
+                 drawItems.debugText, 500, 200, 20, pm.get_color("white"))
 ######
 # MAIN START
 #####
