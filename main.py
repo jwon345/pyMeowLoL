@@ -207,7 +207,7 @@ def GetMissles():
     missleCount = 0
     b = [0, 0]
     for obj in objectList:
-        size = 8
+        size = 5
         try:
             missleStartPos = (pm.r_floats(
                 proc, obj + offsets.MissileStartPos, 3))
@@ -230,12 +230,12 @@ def GetMissles():
                 if (pm.r_int16(proc, obj + offsets.MissileSpellInfo + 16) == 1063):
                     pm.draw_text("lux Q", 2500, 500 + 20*missleCount,
                                  20, pm.get_color("white"))
-                    size = 50
+                    size = 10
 
                 if (pm.r_int16(proc, obj + offsets.MissileSpellInfo + 16) == 10972):
                     pm.draw_text("lux E", 2500, 500 + 20*missleCount,
                                  20, pm.get_color("white"))
-                    size = 30
+                    size = 10
                 if (pm.r_int16(proc, obj + offsets.MissileSpellInfo + 16) == 26549):
                     pm.draw_text("lux W", 2500, 500 + 20*missleCount,
                                  20, pm.get_color("white"))
@@ -295,6 +295,10 @@ def GetMissles():
 
                 # print(pm.r_string(proc, info))
 
+                ##
+                #Draw the missle
+                ##
+
                 missleStartPosToScreen = (world_to_screen(find_view_proj_matrix(
                     mod['base']), width, height, missleStartPos[0], missleStartPos[1] * 2, missleStartPos[2], offscreen=True))
                 missleEndPosToScreen = (world_to_screen(find_view_proj_matrix(
@@ -320,6 +324,13 @@ def GetMissles():
                 unitLength = [0, 0]
                 unitLength[0] = vector[0]/magnitude * 200
                 unitLength[1] = vector[1]/magnitude * 200
+
+
+                ## my perpendicular distance test function
+                # perpendicularLengthDataArray = np.array([missleStartPosToScreen[0], missleStartPosToScreen[1]],[missleEndPosToScreen[0], missleEndPosToScreen[1]], [localPlayerScreenPos[0], localPlayerScreenPos[1]])
+
+
+
                 # pm.draw_line(localPlayerPos[0], localPlayerPos[2], localPlayerPos[0] - unitLength[2], localPlayerPos[2] + unitLength[0], 10 ,pm.get_color("purple"))
 
                 # pm.draw_line(localPlayerPos[0], localPlayerPos[2], localPlayerPos[0] -
@@ -336,30 +347,31 @@ def GetMissles():
                 dodgeUpMagnitude = (dodgeUp[0]**2 + dodgeUp[1]**2)**0.5
                 dodgeDownMagnitude = (dodgeDown[0]**2 + dodgeDown[1]**2)**0.5
 
+                # dodge lines
+                pm.draw_line(
+                    localPlayerScreenPos[0], localPlayerScreenPos[1], localPlayerScreenPos[0] - unitLength[1], localPlayerScreenPos[1] - unitLength[0], pm.get_color("red"), 1)
+                pm.draw_line(
+                    localPlayerScreenPos[0], localPlayerScreenPos[1], localPlayerScreenPos[0] + unitLength[1], localPlayerScreenPos[1] + unitLength[0], pm.get_color("blue"), 1)
+
+                # middle plyaer to missle end point
+                pm.draw_line(
+                    localPlayerScreenPos[0], localPlayerScreenPos[1], localPlayerScreenPos[0] + playerToMissle[0], localPlayerScreenPos[1] + playerToMissle[1], pm.get_color("purple"), 1)
+
+                # player dodge points to misslew
+                pm.draw_line(
+                    localPlayerScreenPos[0] + unitLength[1], localPlayerScreenPos[1] + unitLength[0], localPlayerScreenPos[0] + playerToMissle[0], localPlayerScreenPos[1] + playerToMissle[1], pm.get_color("green"), 2)
+                pm.draw_line(
+                    localPlayerScreenPos[0] - unitLength[1], localPlayerScreenPos[1] - unitLength[0], localPlayerScreenPos[0] + playerToMissle[0], localPlayerScreenPos[1] + playerToMissle[1], pm.get_color("green"), 2)
+
                 if (pm.key_pressed(0x53)):
-                    if dodgeUpMagnitude > 400:
+                    ### if the dodge radius is too far dont 
+                    if dodgeUpMagnitude > 1000:
                         print("toofar")
                         continue
-
-                    # dodge lines
-                    pm.draw_line(
-                        localPlayerScreenPos[0], localPlayerScreenPos[1], localPlayerScreenPos[0] - unitLength[1], localPlayerScreenPos[1] - unitLength[0], pm.get_color("red"), 1)
-                    pm.draw_line(
-                        localPlayerScreenPos[0], localPlayerScreenPos[1], localPlayerScreenPos[0] + unitLength[1], localPlayerScreenPos[1] + unitLength[0], pm.get_color("blue"), 1)
-
-                    # middle plyaer to missle end point
-                    pm.draw_line(
-                        localPlayerScreenPos[0], localPlayerScreenPos[1], localPlayerScreenPos[0] + playerToMissle[0], localPlayerScreenPos[1] + playerToMissle[1], pm.get_color("purple"), 1)
-
-                    # player dodge points to misslew
-                    pm.draw_line(
-                        localPlayerScreenPos[0] + unitLength[1], localPlayerScreenPos[1] + unitLength[0], localPlayerScreenPos[0] + playerToMissle[0], localPlayerScreenPos[1] + playerToMissle[1], pm.get_color("green"), 10)
-                    pm.draw_line(
-                        localPlayerScreenPos[0] - unitLength[1], localPlayerScreenPos[1] - unitLength[0], localPlayerScreenPos[0] + playerToMissle[0], localPlayerScreenPos[1] + playerToMissle[1], pm.get_color("green"), 10)
-
                     # if within range dodge initiate
 
                     dodgeClass.dodge = True
+                    #choosing to dodge up or down
                     if dodgeUpMagnitude < dodgeDownMagnitude:
                         dodgeClass.pos = [int(
                             localPlayerScreenPos[0] - unitLength[1]), int(localPlayerScreenPos[1] - unitLength[0])]
@@ -416,21 +428,7 @@ def attackCycle():
             gameTimes.canMoveTime = gameTimes.gameTime + clickDelay
 
     # a click
-    if gameTimes.gameTime > gameTimes.canAttackTime and pm.key_pressed(0x41) and not pm.key_pressed(0x04):
-        pydirectinput.keyDown("x")
-        pydirectinput.keyUp("x")
-
-        time.sleep(0.01)
-
-        if (pm.key_pressed(0x04)):
-            return
-        gameTimes.canAttackTime = gameTimes.gameTime + ping + getAttackTime()
-        gameTimes.canMoveTime = gameTimes.gameTime + \
-            getAttackTime() * attackWindupPercentage
-        return
-    elif gameTimes.gameTime > gameTimes.canMoveTime:
-        pydirectinput.keyDown("k")
-        pydirectinput.keyUp("k")
+    if 
 
         gameTimes.canMoveTime = gameTimes.gameTime + clickDelay
 
@@ -470,6 +468,21 @@ def attackCycle():
             pydirectinput.keyDown("k")
             pydirectinput.keyUp("k")
             gameTimes.canMoveTime = gameTimes.gameTime + clickDelay
+
+    # A button click => auto anything
+    #wip make it get target lowest minion
+    elif gameTimes.gameTime > gameTimes.canAttackTime and pm.key_pressed(0x41) and not pm.key_pressed(0x04):
+        pydirectinput.keyDown("x")
+        pydirectinput.keyUp("x")
+
+        time.sleep(0.01)
+
+        if (pm.key_pressed(0x04)):
+            return
+        gameTimes.canAttackTime = gameTimes.gameTime + ping + getAttackTime()
+        gameTimes.canMoveTime = gameTimes.gameTime + \
+            getAttackTime() * attackWindupPercentage
+        return
 
     # walk
     elif gameTimes.gameTime > gameTimes.canMoveTime:
