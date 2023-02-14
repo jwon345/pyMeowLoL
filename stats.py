@@ -35,6 +35,16 @@ champStats = {
         "attackSpeedRatio": 0.568,
         "attackWindupPercentage":0.18
     },
+    "kaisa": {
+        "attackSpeedBase": 0.644,
+        "attackSpeedRatio": 0,
+        "attackWindupPercentage":0.165
+    },
+    "kogmaw": {
+        "attackSpeedBase": 0.665,
+        "attackSpeedRatio": 0,
+        "attackWindupPercentage":0.17
+    },
     "kalista": {
         "attackSpeedBase": 0.694,
         "attackSpeedRatio": 0,

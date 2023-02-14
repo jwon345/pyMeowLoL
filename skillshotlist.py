@@ -19,8 +19,3 @@ abilities = {
         
     }
 }
-
-for i in abilities:
-    if (-29353 in abilities[i]):
-        print("found")
-    print(abilities[i])

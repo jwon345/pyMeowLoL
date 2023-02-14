@@ -18,7 +18,7 @@ attackWindupPercentage = 0.2
 clickDelay = 0.07
 rangeExtender = 100
 
-dodgekey = "2"
+dodgekey = "w"
 
 ping = 0.050
 
@@ -88,8 +88,8 @@ proc = pm.open_process(processName="League of Legends.exe")
 
 
 mod = (pm.get_module(proc, "League of Legends.exe"))
-
-print(mod['base'])
+print("here is base")
+print(hex(mod['base']))
 print("\n")
 
 rollingOffset = 0
@@ -118,6 +118,7 @@ def find_view_proj_matrix(base):
     proj_matrix = list_to_matrix(
         [float_from_buffer(data, 64 + (i * 4)) for i in range(16)])
     view_proj_matrix = np.matmul(view_matrix, proj_matrix)
+    print(view_proj_matrix.reshape(16))
     return view_proj_matrix.reshape(16)
 
 
@@ -183,6 +184,7 @@ async def getTarget():
 
     if lowest != 99999:
         try:
+            print("target pos " + str(pm.r_floats(proc, e + offsets.ObjPos, 3)))
             print("target is " + pm.r_string(proc, e + offsets.ObjPlayerName))
         except:
             print("name cant print")
@@ -218,9 +220,9 @@ def GetMissles():
 
             # if missle startpos within the map and is not an auto attack
             if (missleStartPos[0] > 1 and missleStartPos[0] < 20000
-                and missleEndPos[0] > 1 and missleEndPos[0] < 20000
-                    and (pm.r_int(proc, obj + offsets.MissileSpellInfo + 0x4) in [0, 1, 2, 3])
-                ):
+                    and missleEndPos[0] > 1 and missleEndPos[0] < 20000
+                        and (pm.r_int(proc, obj + offsets.MissileSpellInfo + 0x4) in [0, 1, 2, 3])
+                    ):
 
                 missleCount += 1
 
@@ -303,7 +305,7 @@ def GetMissles():
                 # print(pm.r_string(proc, info))
 
                 ##
-                #Draw the missle
+                # Draw the missle
                 ##
 
                 missleStartPosToScreen = (world_to_screen(find_view_proj_matrix(
@@ -332,11 +334,8 @@ def GetMissles():
                 unitLength[0] = vector[0]/magnitude * 200
                 unitLength[1] = vector[1]/magnitude * 200
 
-
-                ## my perpendicular distance test function
+                # my perpendicular distance test function
                 # perpendicularLengthDataArray = np.array([missleStartPosToScreen[0], missleStartPosToScreen[1]],[missleEndPosToScreen[0], missleEndPosToScreen[1]], [localPlayerScreenPos[0], localPlayerScreenPos[1]])
-
-
 
                 # pm.draw_line(localPlayerPos[0], localPlayerPos[2], localPlayerPos[0] - unitLength[2], localPlayerPos[2] + unitLength[0], 10 ,pm.get_color("purple"))
 
@@ -354,31 +353,33 @@ def GetMissles():
                 dodgeUpMagnitude = (dodgeUp[0]**2 + dodgeUp[1]**2)**0.5
                 dodgeDownMagnitude = (dodgeDown[0]**2 + dodgeDown[1]**2)**0.5
 
-                # dodge lines
-                pm.draw_line(
-                    localPlayerScreenPos[0], localPlayerScreenPos[1], localPlayerScreenPos[0] - unitLength[1], localPlayerScreenPos[1] - unitLength[0], pm.get_color("red"), 1)
-                pm.draw_line(
-                    localPlayerScreenPos[0], localPlayerScreenPos[1], localPlayerScreenPos[0] + unitLength[1], localPlayerScreenPos[1] + unitLength[0], pm.get_color("blue"), 1)
+                if dodgeUpMagnitude < 1000:
+                    print("toofar")
+                    # dodge lines
+                    pm.draw_line(
+                        localPlayerScreenPos[0], localPlayerScreenPos[1], localPlayerScreenPos[0] - unitLength[1], localPlayerScreenPos[1] - unitLength[0], pm.get_color("red"), 1)
+                    pm.draw_line(
+                        localPlayerScreenPos[0], localPlayerScreenPos[1], localPlayerScreenPos[0] + unitLength[1], localPlayerScreenPos[1] + unitLength[0], pm.get_color("blue"), 1)
 
-                # middle plyaer to missle end point
-                pm.draw_line(
-                    localPlayerScreenPos[0], localPlayerScreenPos[1], localPlayerScreenPos[0] + playerToMissle[0], localPlayerScreenPos[1] + playerToMissle[1], pm.get_color("purple"), 1)
+                    # middle plyaer to missle end point
+                    pm.draw_line(
+                        localPlayerScreenPos[0], localPlayerScreenPos[1], localPlayerScreenPos[0] + playerToMissle[0], localPlayerScreenPos[1] + playerToMissle[1], pm.get_color("purple"), 1)
 
-                # player dodge points to misslew
-                pm.draw_line(
-                    localPlayerScreenPos[0] + unitLength[1], localPlayerScreenPos[1] + unitLength[0], localPlayerScreenPos[0] + playerToMissle[0], localPlayerScreenPos[1] + playerToMissle[1], pm.get_color("green"), 2)
-                pm.draw_line(
-                    localPlayerScreenPos[0] - unitLength[1], localPlayerScreenPos[1] - unitLength[0], localPlayerScreenPos[0] + playerToMissle[0], localPlayerScreenPos[1] + playerToMissle[1], pm.get_color("green"), 2)
+                    # player dodge points to misslew
+                    pm.draw_line(
+                        localPlayerScreenPos[0] + unitLength[1], localPlayerScreenPos[1] + unitLength[0], localPlayerScreenPos[0] + playerToMissle[0], localPlayerScreenPos[1] + playerToMissle[1], pm.get_color("green"), 2)
+                    pm.draw_line(
+                        localPlayerScreenPos[0] - unitLength[1], localPlayerScreenPos[1] - unitLength[0], localPlayerScreenPos[0] + playerToMissle[0], localPlayerScreenPos[1] + playerToMissle[1], pm.get_color("green"), 2)
 
                 if (pm.key_pressed(0x53)):
-                    ### if the dodge radius is too far dont 
-                    if dodgeUpMagnitude > 1000:
+                    # if the dodge radius is too far dont
+                    if dodgeUpMagnitude > 400:
                         print("toofar")
                         continue
                     # if within range dodge initiate
 
                     dodgeClass.dodge = True
-                    #choosing to dodge up or down
+                    # choosing to dodge up or down
                     if dodgeUpMagnitude < dodgeDownMagnitude:
                         dodgeClass.pos = [int(
                             localPlayerScreenPos[0] - unitLength[1]), int(localPlayerScreenPos[1] - unitLength[0])]
@@ -434,7 +435,7 @@ def attackCycle():
             pydirectinput.keyUp("k")
             dodgeClass.lastDodgeTime = gameTimes.gameTime
             gameTimes.canMoveTime = gameTimes.gameTime + clickDelay
-            
+
         gameTimes.canMoveTime = gameTimes.gameTime + clickDelay
 
     if gameTimes.gameTime > gameTimes.canAttackTime and pm.key_pressed(0x06) and not pm.key_pressed(0x04):
@@ -475,7 +476,7 @@ def attackCycle():
             gameTimes.canMoveTime = gameTimes.gameTime + clickDelay
 
     # A button click => auto anything
-    #wip make it get target lowest minion
+    # wip make it get target lowest minion
     elif gameTimes.gameTime > gameTimes.canAttackTime and pm.key_pressed(0x41) and not pm.key_pressed(0x04):
         pydirectinput.keyDown("x")
         pydirectinput.keyUp("x")
@@ -502,18 +503,21 @@ def printsome():
 
 
 def drawshit():
-    pm.draw_text((str(drawItems.attackspeedText)),
-                 2500, 200, 20, pm.get_color("white"))
 
-    pm.draw_text((str(pm.r_floats(proc, player + offsets.ObjPos, 3))),
-                 3000, 400, 20, pm.get_color("white"))
-    pm.draw_text(drawItems.debugTextMem + "  " +
-                 drawItems.debugText, 500, 200, 20, pm.get_color("white"))
+    # pm.draw_text((str(drawItems.attackspeedText)),
+    #              2500, 200, 20, pm.get_color("white"))
+
+    # pm.draw_text((str(pm.r_floats(proc, player + offsets.ObjPos, 3))),
+    #              3000, 400, 20, pm.get_color("white"))
+    # pm.draw_text(drawItems.debugTextMem + "  " +
+    #              drawItems.debugText, 500, 200, 20, pm.get_color("white"))
+    pass
 ######
 # MAIN START
 #####
 
 
+print(pm.r_floats(proc, player + offsets.ObjPos, 3))
 champ = pm.r_string(proc, pm.r_int(proc, player + offsets.ObjName)).lower()
 if (champ in champStats):
     attackSpeedBase = champStats[champ]["attackSpeedBase"]

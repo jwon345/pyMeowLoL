@@ -18,7 +18,7 @@ ObjBaseAtk = 0x135C#13.1
 ObjBonusAtk = 0x12D4#13.1
 ObjMoveSpeed = 0x139C#13.1
 ObjSpellBook = 0x29D0#13.1
-ObjName = 0x2DBC#13.1
+ObjName = 0x2DB4#13.3
 ObjLvl = 0x35AC#13.1
 ObjExpiry = 0x298#13.1
 ObjCrit = 0x1858#13.1
@@ -42,7 +42,7 @@ ObjManaE = 0x2580 #13.1
 ObjManaR = 0x2590 #13.1
 
 objBonusAtkSpeed = 0x132C
-objAtkRange = 0x13A4
+objAtkRange = 0x13A4 
 
 ItemListItem = 0xC
 ItemInfo = 0x20
@@ -99,13 +99,15 @@ oSpellDataWidth = 0x474
 oSpellDataMana = 0x524
  
 #IDA
-GameTime = 0x315CCF4#13.1
+# GameTime = 0x315CCF4#13.1
+GameTime = 0x316FDE4 #13.3
  
-ViewProjMatrices = 0x3189D00#13.1
-Renderer = 0x318F6A0#13.1
+ViewProjMatrices = 0x319CF18#13.3
+Renderer = 0x31A28B8#13.3
  
-ObjectManager = 0x18C6B1C#13.1
-LocalPlayer = 0x3163080#13.1
+ObjectManager = 0x18D9ACC #13.3
+LocalPlayer = 0x31767BC	 #13.3
+
 UnderMouseObject = 0x2514404#13.1
  
 IssueOrder = 0x167340#13.1
@@ -120,7 +122,8 @@ IsTurret = 0x19F9B0 #13.1 #2000h
 IsMissile = 0x19F8E0 #13.1 #8000h 
 IsInhibitor = 0x19F820 #13.1 #2th
 IsNexus = 0x19F860 #13.1 #3th
-IsAlive = 0x190530 # 13.1
+# IsAlive = 0x190530 # 13.1
+IsAlive =  0x17AF50 # 13.3
 IsNotWall = 0xA3F000# 13.1
  
 HudInstance = 0x18C6B24#13.1
